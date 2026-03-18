@@ -9,11 +9,11 @@ import (
 
 // RegisterRequest represents a user registration request
 type RegisterRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8"`
+	Email     string `json:"email" binding:"required,email"`
+	Password  string `json:"password" binding:"required,min=8"`
 	FirstName string `json:"first_name" binding:"required,min=2"`
 	LastName  string `json:"last_name" binding:"required,min=2"`
-	Phone     string `json:"phone" binding:"omitempty,len=20"`
+	Phone     string `json:"phone" binding:"omitempty,min=10,max=20"`
 }
 
 // LoginRequest represents a user login request
@@ -24,8 +24,8 @@ type LoginRequest struct {
 
 // LoginResponse represents a successful login response
 type LoginResponse struct {
-	AccessToken string    `json:"access_token"`
-	ExpiresIn   int64     `json:"expires_in"`
+	AccessToken string        `json:"access_token"`
+	ExpiresIn   int64         `json:"expires_in"`
 	User        *UserResponse `json:"user"`
 }
 
