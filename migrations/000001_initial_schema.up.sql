@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 -- =============================================
 -- 1. USERS TABLE (Authentication)
 -- =============================================
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE users (
 -- =============================================
 -- 2. DEPARTMENTS TABLE
 -- =============================================
-CREATE TABLE departments (
+CREATE TABLE IF NOT EXISTS departments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
@@ -35,7 +35,7 @@ CREATE TABLE departments (
 -- =============================================
 -- 3. EMPLOYEES TABLE
 -- =============================================
-CREATE TABLE employees (
+CREATE TABLE IF NOT EXISTS employees (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
     first_name VARCHAR(100) NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE employees (
 -- =============================================
 -- 4. LEAVE TYPES TABLE
 -- =============================================
-CREATE TABLE leave_types (
+CREATE TABLE IF NOT EXISTS leave_types (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(50) NOT NULL UNIQUE,
     description TEXT,
@@ -68,7 +68,7 @@ CREATE TABLE leave_types (
 -- =============================================
 -- 5. LEAVE BALANCES TABLE
 -- =============================================
-CREATE TABLE leave_balances (
+CREATE TABLE IF NOT EXISTS leave_balances (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
     leave_type_id UUID NOT NULL REFERENCES leave_types(id) ON DELETE CASCADE,
@@ -84,7 +84,7 @@ CREATE TABLE leave_balances (
 -- =============================================
 -- 6. LEAVE REQUESTS TABLE
 -- =============================================
-CREATE TABLE leave_requests (
+CREATE TABLE IF NOT EXISTS leave_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
     leave_type_id UUID NOT NULL REFERENCES leave_types(id) ON DELETE CASCADE,
@@ -105,7 +105,7 @@ CREATE TABLE leave_requests (
 -- =============================================
 -- 7. AUDIT LOGS TABLE
 -- =============================================
-CREATE TABLE audit_logs (
+CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     action VARCHAR(100) NOT NULL,
@@ -118,50 +118,53 @@ CREATE TABLE audit_logs (
 );
 
 -- =============================================
--- 8. INDEXES FOR PERFORMANCE
+-- 8. CREATE INDEXES (IF NOT EXISTS for safety)
 -- =============================================
 
 -- Users indexes
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_users_is_active ON users(is_active);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
 
 -- Departments indexes
-CREATE INDEX idx_departments_name ON departments(name);
-CREATE INDEX idx_departments_is_active ON departments(is_active);
+CREATE INDEX IF NOT EXISTS idx_departments_name ON departments(name);
+CREATE INDEX IF NOT EXISTS idx_departments_is_active ON departments(is_active);
 
 -- Employees indexes
-CREATE INDEX idx_employees_user_id ON employees(user_id);
-CREATE INDEX idx_employees_department_id ON employees(department_id);
-CREATE INDEX idx_employees_manager_id ON employees(manager_id);
-CREATE INDEX idx_employees_email ON employees(email);
-CREATE INDEX idx_employees_is_active ON employees(is_active);
+CREATE INDEX IF NOT EXISTS idx_employees_user_id ON employees(user_id);
+CREATE INDEX IF NOT EXISTS idx_employees_department_id ON employees(department_id);
+CREATE INDEX IF NOT EXISTS idx_employees_manager_id ON employees(manager_id);
+CREATE INDEX IF NOT EXISTS idx_employees_email ON employees(email);
+CREATE INDEX IF NOT EXISTS idx_employees_is_active ON employees(is_active);
 
 -- Leave types indexes
-CREATE INDEX idx_leave_types_name ON leave_types(name);
-CREATE INDEX idx_leave_types_is_active ON leave_types(is_active);
+CREATE INDEX IF NOT EXISTS idx_leave_types_name ON leave_types(name);
+CREATE INDEX IF NOT EXISTS idx_leave_types_is_active ON leave_types(is_active);
 
 -- Leave balances indexes
-CREATE INDEX idx_leave_balances_employee_id ON leave_balances(employee_id);
-CREATE INDEX idx_leave_balances_leave_type_id ON leave_balances(leave_type_id);
-CREATE INDEX idx_leave_balances_year ON leave_balances(year);
+CREATE INDEX IF NOT EXISTS idx_leave_balances_employee_id ON leave_balances(employee_id);
+CREATE INDEX IF NOT EXISTS idx_leave_balances_leave_type_id ON leave_balances(leave_type_id);
+CREATE INDEX IF NOT EXISTS idx_leave_balances_year ON leave_balances(year);
 
 -- Leave requests indexes
-CREATE INDEX idx_leave_requests_employee_id ON leave_requests(employee_id);
-CREATE INDEX idx_leave_requests_status ON leave_requests(status);
-CREATE INDEX idx_leave_requests_created_at ON leave_requests(created_at);
-CREATE INDEX idx_leave_requests_start_date ON leave_requests(start_date);
-CREATE INDEX idx_leave_requests_end_date ON leave_requests(end_date);
-CREATE INDEX idx_leave_requests_employee_status ON leave_requests(employee_id, status);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_employee_id ON leave_requests(employee_id);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_status ON leave_requests(status);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_created_at ON leave_requests(created_at);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_start_date ON leave_requests(start_date);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_end_date ON leave_requests(end_date);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_employee_status ON leave_requests(employee_id, status);
 
 -- Audit logs indexes
-CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_entity_type ON audit_logs(entity_type);
-CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_entity_type ON audit_logs(entity_type);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
 
 -- =============================================
--- 9. VIEWS FOR COMMON QUERIES
+-- 9. CREATE VIEWS (IF NOT EXISTS for safety)
 -- =============================================
+
+DROP VIEW IF EXISTS pending_approvals CASCADE;
+DROP VIEW IF EXISTS employee_leave_summary CASCADE;
 
 -- View for leave summary
 CREATE VIEW employee_leave_summary AS
@@ -205,10 +208,9 @@ WHERE lr.status = 'pending'
 ORDER BY lr.created_at DESC;
 
 -- =============================================
--- 10. FUNCTIONS FOR TRIGGERS
+-- 10. CREATE FUNCTIONS (IF NOT EXISTS for safety)
 -- =============================================
 
--- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -218,8 +220,15 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =============================================
--- 11. TRIGGERS FOR AUTO TIMESTAMP UPDATE
+-- 11. CREATE TRIGGERS (DROP AND RECREATE)
 -- =============================================
+
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+DROP TRIGGER IF EXISTS update_departments_updated_at ON departments;
+DROP TRIGGER IF EXISTS update_employees_updated_at ON employees;
+DROP TRIGGER IF EXISTS update_leave_types_updated_at ON leave_types;
+DROP TRIGGER IF EXISTS update_leave_balances_updated_at ON leave_balances;
+DROP TRIGGER IF EXISTS update_leave_requests_updated_at ON leave_requests;
 
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
